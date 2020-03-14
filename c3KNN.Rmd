@@ -1,0 +1,89 @@
+---
+title: "Diagnosing breast cancer with k-NN"
+date: "`r Sys.time()`"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "")
+```
+
+## Introduction
+
+Lazy learning is also known as instance-based learning or rote learning. An instance-based learning based learners do not build a model, this method is said to be in a class of non-parametric learning methods-no parameters are learned about the data.
+
+## Data set
+
+The early detection of breast cancer involves examing tissue for abnormal lumps or masses. A clinician examines the cell under amicroscope to determine whether the mass is likely to be the maligant or benign. 
+```{r}
+wbcd = read.csv("wisc_bc_data.csv", stringsAsFactors = FALSE)
+str(wbcd)
+```
+
+Delete `id` and see the summary of data:
+```{r}
+wbcd = wbcd[-1]
+table(wbcd$diagnosis)
+```
+
+Give `B` and `M` lables:
+```{r}
+wbcd$diagnosis = factor(wbcd$diagnosis, levels = c("B", "M"), labels = c("Benign", "Maligant"))
+round(prop.table(table(wbcd$diagnosis)) * 100, digits = 1)
+```
+
+Overview the variables of data
+```{r}
+summary(wbcd[c("radius_mean", "area_mean", "smoothness_mean")])
+```
+
+Normalizing numeric data
+```{r}
+normalize = function(x){ return((x-min(x))/(max(x)-min(x)))}
+wbcd_n = as.data.frame(lapply(wbcd[2:31], normalize))
+summary(wbcd_n$area_mean)
+```
+
+Create training and testing datasets
+```{r}
+wbcd_train = wbcd_n[1:469, ]
+wbcd_test  = wbcd_n[470:569, ]
+wbcd_train_labels = wbcd[1:469, 1]
+wbcd_test_labels  = wbcd[470:569, 1]
+```
+
+## Training the model
+```{r}
+if (!require("class")) {install.packages("class")};
+library(class)
+wbcd_test_pred = knn(train = wbcd_train, test = wbcd_test, cl = wbcd_train_labels, k =21)
+```
+
+## Evaluating model performance 
+```{r}
+if (!require("gmodels")) {install.packages("gmodels")};
+library(gmodels)
+CrossTable(x = wbcd_test_labels, y = wbcd_test_pred, prop.chisq = FALSE)
+```
+From the reult, we can see that only 2 maligant are incorrectly estimated.
+
+## Improving performance
+Change standarization
+```{r}
+wbcd_z = as.data.frame(scale(wbcd[-1:-2]))
+summary(wbcd_z$area_mean)
+wbcd_train = wbcd_z[1:469, ]
+wbcd_test  = wbcd_z[470:569, ]
+wbcd_train_labels = wbcd[1:469, 1]
+wbcd_test_labels  = wbcd[470:569, 1]
+wbcd_test_pred = knn(train = wbcd_train, test = wbcd_test, cl = wbcd_train_labels, k = 21)
+CrossTable(x = wbcd_test_labels, y = wbcd_test_pred, prop.chisq = FALSE)
+wbcd_test_pred = knn(train = wbcd_train, test = wbcd_test, cl = wbcd_train_labels, k = 11)
+CrossTable(x = wbcd_test_labels, y = wbcd_test_pred, prop.chisq = FALSE)
+wbcd_test_pred = knn(train = wbcd_train, test = wbcd_test, cl = wbcd_train_labels, k = 15)
+CrossTable(x = wbcd_test_labels, y = wbcd_test_pred, prop.chisq = FALSE)
+```
+Alternative value is `k`.
+
+
+

@@ -1,0 +1,45 @@
+---
+title: "Chap 4 Classification"
+output: html_notebook
+date: "`r Sys.time()`"
+subtitle: An introduction to statistical learning
+---
+
+```{r}
+## install and load package
+if(!require(ISLR)) {install.packages("ISLR")}; library(ISLR) 
+
+names(Smarket) ## check the viables
+dim(Smarket)
+summary(Smarket)
+typeof(Smarket) ## check type of data
+
+cor(Smarket[,-9])  ## pairwise correlation among x's
+
+attach(Smarket)
+plot(Volume)
+```
+
+## 1. Logistic regression
+
+```{r}
+glm.fit <- glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume, Smarket, family = binomial) 
+
+summary(glm.fit)
+coef(glm.fit)
+summary(glm.fit)$coef
+summary(glm.fit)$coef[,4]
+
+glm.probs <- predict(glm.fit, type = "response")
+glm.probs[1:10]
+contrasts(Direction) ## create dummy variables
+
+glm.pred <- rep("Down", 1250) 
+glm.pred[glm.probs >0.5] ="Up"
+
+## count the correct and incorrect number
+## However, we used full data to do prediction
+table(glm.pred, Direction)
+mean(glm.pred == Direction)
+```
+
